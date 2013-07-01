@@ -1,0 +1,35 @@
+#!/usr/local/bin/python
+import sys,os
+# mimics awk -print '{}', hence some weird indexing and inconsistent
+# behavior when using delimiters.
+
+def main():
+    args = sys.argv[1:]
+    i = 0
+    delim = None
+    # Strip out -F args.
+    while i < len(args):
+        arg = args[i]
+        if arg.startswith('-F') and len(arg) > 2:
+            delim = arg[2:]
+            args.pop(i)
+        else:
+            i += 1
+
+    for line in sys.stdin:
+        words = line.strip().split(delim)
+        output = []
+        for arg in args:
+            try:
+                index = int(arg)
+                if index == 0:
+                    output.append(line.strip('\n'))
+                else:
+                    output.append(words[index-1])
+            except (ValueError, IndexError):
+                output.append(arg)
+        print " ".join(output)
+
+
+if __name__ == "__main__":
+    main()

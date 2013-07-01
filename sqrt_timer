@@ -1,0 +1,29 @@
+#!/usr/local/bin/python
+from __future__ import with_statement
+import random, time
+from math import sqrt
+class TimerContext:
+    """A context to time operations.  This allows us to time code
+    without having to intersperse timing lines lines everywhere, but
+    comes with the price of ugly nesting.
+    """
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __enter__(self):
+        self.startTime = time.time()
+
+    def __exit__(self, type, value, traceback):
+        self.endTime = time.time()
+        print("%.2f sec to %s" % (self.endTime-self.startTime, self.msg))
+
+size = 10000000
+with TimerContext("generate %d random numbers."):
+    randInts = [random.randint(0,100000000000000) for i in xrange(size)]
+with TimerContext("using math.sqrt"):
+    for randy in randInts:
+        sqrt(randy)
+
+with TimerContext("using **0.5"):
+    for randy in randInts:
+        randy**0.5

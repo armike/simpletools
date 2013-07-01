@@ -1,0 +1,7 @@
+#!/usr/bin/python
+"""This can usually be achieved with the 'yes' command"""
+try:
+    while 1:
+        print 'y'
+except IOError:
+    pass

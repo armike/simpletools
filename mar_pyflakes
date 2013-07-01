@@ -1,0 +1,42 @@
+#!/usr/local/bin/tcsh -fb
+# Run pyflakes through some filters to avoid some standard errors with code.
+set originalInput = $1
+set tmpDir = `mktemp -d /tmp/maross_pyflakes.XXXXXXX`
+mkdir -p $tmpDir
+set inputBasename = `basename $1`
+set tmpInput = "${tmpDir}/${inputBasename}"
+set tmpOutput = "${tmpDir}/output.txt"
+
+# pyflakes doesn't seem to like with statements, regardless of what
+# the version notes say.  Change while statement to if.  Yes, this is a
+# stupid hack, and will not handle with x as :
+sed -e 's/with \(.\+\)\(as .\+\):/if \1:/g' -e 's/with \(.\+\):/if \1:/g' $1 > $tmpInput
+/home/maross/bin/pyflakes $tmpInput |& grep -v "'studioenv' imported but unused" |& grep -v "redefinition of unused 'studio' from line " |& grep -v "undefined name 'maya'" |& grep -v "'os' imported but unused" |& grep -v "'sys' imported but unused" >& $tmpOutput
+sed $tmpOutput -e 's/\(local variable .* is assigned to but never used\)/Warning: \1/g' > "${tmpOutput}.tmp"
+sed ${tmpOutput}.tmp -e 's/\(.*:\)\(.* imported but unused\)/\1 Warning: \2/g' > "${tmpOutput}"
+
+# pyflakes outputs errors starting with the same format of grep, so we use
+# that to ensure a debugger line counts as an error.  I'm is paranoid of some
+# day installing a file with an interactive debugger line left in.
+# Wouldn't that be a fun call?
+# alias grepWarn 'grep -Hn --color=never \!* '"$tmpInput | awk '"'{print $1, "Warning: ", $0}'"' >> $tmpOutput"
+alias grepWarn 'grep -Hn --color=never \!* '"$tmpInput"' | sed -e "s%\(.*:.*:\)%\1 Warning: %g" >> $tmpOutput'
+
+grepWarn 'pdb.set_trace'
+grepWarn 'import rpdb2; rpdb2.start_embedded_debugger'
+grepWarn '(~/|/home/maross/|/Users/maross)'
+grepWarn 'pydevd'
+rm $tmpInput
+
+# If we get errors but exit with a specific error code, emacs's
+# flymake (and probably other programs) ignore the output, so exit 1
+# if any errors were found.
+if(`cat $tmpOutput` == "") then
+  rm -rf $tmpDir
+  exit 
+else
+  txt_repall "${tmpInput}" "${originalInput}" -s $tmpOutput 
+  cat $tmpOutput
+  rm -rf $tmpDir
+  exit 1
+endif

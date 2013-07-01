@@ -1,0 +1,25 @@
+#!/usr/bin/python
+import sys,os
+
+
+def main():
+   total = 0
+   args = sys.argv[1:]
+   if args:
+      for arg in sys.argv[1:]:
+         try:
+            total += float(arg)
+         except:
+            pass
+   else:
+      for line in sys.stdin:
+         args = line.split()
+         for arg in args:
+            try:
+               total += float(arg)
+            except:
+               pass
+   print total
+
+if __name__ == "__main__":
+   main()

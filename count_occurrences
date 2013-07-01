@@ -1,0 +1,50 @@
+#!/usr/bin/python
+import sys,os
+"""This can also be achieved with <cmd> | sort | uniq -c"""
+
+def main(argv):
+    args = argv[1:]
+
+    if args:
+       for filepath in sys.argv[1:]:
+           with open(filepath) as _f:
+               text =_f.read()
+               writeOccurrences(text)
+    else:
+        lines = []
+        for line in sys.stdin:
+            lines.append(line)
+        writeOccurrences('\n'.join(lines))
+
+def writeOccurrences(text, delimiter='\n'):
+    """Prints the number of occurrences of each string in text separated by
+    delimiter.  Prints in sorted order.
+    :Parameters:
+        text : `str`
+        delimiter : `str`
+    """
+    occurrences = countOccurrences(text, delimiter).items()
+    occurrences.sort(key=lambda pair: pair[1])
+    print '\n'.join(["%s %s" % (n,s) for s,n in occurrences])
+
+def countOccurrences(text, delimiter='\n'):
+    """
+    :Parameters:
+        text : `str`
+    :Returns:
+        A dict of ints indexed by strings.  Each string contains the number
+        of times it appeared as a complete line in text.
+    :Rtype:
+        `dict`
+    """
+    d = {}
+    for s in text.split(delimiter):
+        if s:
+            if s in d:
+                d[s] += 1
+            else:
+                d[s] = 1
+    return d
+
+if __name__ == "__main__":
+    main(sys.argv)

@@ -1,0 +1,26 @@
+#!/usr/local/bin/python
+import sys
+
+def main():
+    if sys.argv[1:]:
+        writeItoa(" ".join(sys.argv[1:]))
+    else:
+        for line in sys.stdin:
+            writeItoa(line)
+        
+def writeItoa(numString):
+    """
+    :Parameters:
+        numString : `str`
+            A string of space separated numbers
+    :Side Effects:
+        Prints the ascii version of the given characters
+    """
+    numbers = [int(n) for n in numString.split()]
+    letters = [chr(n) for n in numbers]
+    letters = [L if L != '\x00' else '\\0\n' for L in letters ]
+    letters = "".join(letters)
+    sys.stdout.write("%s" % letters)
+    
+if __name__ == "__main__":
+    main()

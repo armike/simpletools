@@ -1,0 +1,60 @@
+#!/usr/local/bin/python
+
+import os, string
+
+pwd = os.getcwd()
+fields = string.split(pwd, "/")
+length = len(fields)
+
+if fields[1] == "studio":
+
+    if length >= 5:
+        if "_" not in fields[3]:
+            fields[3] = "_" + fields[3]
+
+        if fields[4] == "prod":
+            if length > 6:
+                print fields[5], fields[6], "%s-%s" % (fields[2], fields[3].split('_')[1])
+            elif length > 5:
+                print fields[5], "%s-%s" % (fields[2], fields[3].split('_')[1])
+
+        elif fields[4] == "lib":
+            if length >= 6:
+                if fields[5] == "anim":
+                    if length > 11:
+                        print fields[7], fields[9], fields[11], "%s-%s" % (fields[2], fields[3].split('_')[1])
+                    elif length > 9:
+                        print fields[7], fields[9], "%s-%s" % (fields[2], fields[3].split('_')[1])
+                    elif length > 7:
+                        print fields[7], "%s-%s" % (fields[2], fields[3].split('_')[1])
+                    else:
+                        print fields[5], "%s-%s" % (fields[2], fields[3].split('_')[1])
+                elif fields[5] == "asset":
+                    if length > 7:
+                        print fields[5], fields[7], "%s-%s" % (fields[2], fields[3].split('_')[1])
+                    else:
+                        print fields[5], "%s-%s" % (fields[2], fields[3].split('_')[1])
+                elif fields[5] == "model":
+                    if length > 7:
+                        print fields[5], fields[7], "%s-%s" % (fields[2], fields[3].split('_')[1])
+                    else:
+                        print fields[5], "%s-%s" % (fields[2], fields[3].split('_')[1])
+
+        else:
+            print pwd
+
+    elif length < 4 and length > 2:
+        print fields[2]
+
+    elif length == 4:
+        if "_" not in fields[3]:
+            fields[3] = "_" + fields[3]
+
+        print "%s-%s" % (fields[2], fields[3].split('_')[1])
+
+    else:
+        print pwd
+else:
+    print pwd
+
+

@@ -1,0 +1,14 @@
+#!/usr/bin/python
+"""
+Echo input from stdin, hiliting any given regexes.  Might return funky
+output if your regexes include groups.  Might not!
+"""
+import sys, re
+color = "\033[1;32m"
+normal = "\033[0m"
+args = sys.argv[1:]
+regexes = ['(%s)' % arg for arg in args]
+for line in sys.stdin:
+    for regex in regexes:
+        line = re.sub(regex, r"%s\1%s" % (color, normal), line)
+    sys.stdout.write(line)

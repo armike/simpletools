@@ -1,0 +1,16 @@
+#!/usr/bin/python
+import sys
+intArgs = []
+otherArgs = []
+for arg in sys.argv[1:]:
+    try:
+        intArg = int(arg)
+        intArgs.append(intArg)
+    except ValueError:
+        otherArgs.append(arg)
+
+if len(intArgs) > 0:
+    delimeter = otherArgs[0] if otherArgs else " "
+    print delimeter.join([str(x) for x in range(*intArgs)])
+else:
+    print USAGE

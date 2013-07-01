@@ -1,0 +1,22 @@
+#!/usr/local/bin/python
+import sys,os
+
+def main():
+    args = sys.argv[1:]
+    if args:
+       for arg in sys.argv[1:]:
+           processArg(arg)
+    else:
+       for line in sys.stdin:
+          paths = line.split()
+          for path in paths:
+             processLine(line)
+
+def processLine(line):
+    return [processArg(arg) for arg in line.split()]
+
+def processArg(arg):
+    print os.path.basename(arg)
+
+if __name__ == "__main__":
+    main()
