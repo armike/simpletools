@@ -30,6 +30,7 @@ def main():
                 output.append(arg)
         print " ".join(output)
 
+# test
 
 if __name__ == "__main__":
     main()
