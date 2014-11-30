@@ -1,0 +1,10 @@
+#!/bin/tcsh
+set cmd = "cd ${cwd}"
+
+if (`pwd | awk -F/ '{print $2}'` == 'studio') then
+  set show = `pwd | awk -F/ '{print $3}'`
+  set shdw = `pwd | awk -F/ '{print $4}' | awk -Fshdw_ '{print$2}'`
+  set cmd = "${cmd} ; source $job_env_dir/functions/job_env -skip_cd_on_enter ${show}-${shdw} "
+endif
+
+gnome-terminal --geometry=192x21 -x tcsh

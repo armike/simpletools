@@ -1,0 +1,8 @@
+#!/bin/tcsh -fb
+set module = `src_which_python $1`
+if($status == 0 && module != "") then
+    shift
+    python -m pdb $module $*
+else
+    python -m pdb $*
+endif

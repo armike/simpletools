@@ -1,0 +1,53 @@
+#!/usr/local/bin/python
+import os, sys, re
+
+def main():
+    try:
+        for line in sys.stdin:
+            print humanReadableLine(line)
+    except KeyboardInterrupt:
+        pass
+
+def humanReadableLine(line):
+    """
+    :Parameters:
+        line : `str`
+    """
+    s = []
+
+    # re.split returns the delimiters too, so whitespace will be preserved.
+    # 
+    for token in re.split(r'(\s+)', line):
+        try:
+            token = humanReadableSize(float(token))
+        except ValueError:
+            pass
+        s.append(token)
+
+    finalString = ''.join(s).strip(os.linesep)
+    return finalString
+
+def humanReadableSize(num):
+    """
+    :Parameters:
+        num : `int`
+            Number of bytes to convert to human readable format.
+    :Returns:
+        The given number of bytes in a human readable format.
+    :Rtype:
+        `str`
+    """
+    labels = ['','K','M','G','T']
+
+    if '-kilo' in sys.argv or '-k' in sys.argv:
+        labels.pop(0)
+
+    for label in labels:
+        if num < 10.0:
+            return "%3.1f%s" % (num, label)
+        elif num < 1024.0:
+            return "%3.0f%s" % (num, label)
+        num /= 1024.0
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,11 @@
+#!/bin/tcsh -fb
+
+set FILES = `ls $*`
+foreach FILE ($FILES)
+    echo $FILE
+    set TMP_FILE = "${FILE}.delink_tmp"
+    cp $FILE $TMP_FILE
+    mv $TMP_FILE $FILE
+end
+    
+ 

@@ -1,0 +1,4 @@
+#!/bin/tcsh -fb
+# Strip trailing whitespace from the given files or stdin if no files
+# are given.
+sed -e 's/[ 	]*$//g' $*

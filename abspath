@@ -1,13 +1,17 @@
 #!/usr/bin/python
-import sys,os
+import sys, os
 
-args = sys.argv[1:]
-if args:
-   for arg in sys.argv[1:]:
-        print os.path.abspath(arg)
-else:
-   for line in sys.stdin:
-      paths = line.split()
-      for path in paths:
-         print os.path.abspath(path)
 
+def main(args):
+    args = args[1:]
+    if args:
+        for arg in args:
+            print os.path.abspath(arg)
+    else:
+        for line in sys.stdin:
+            paths = line.split()
+            for path in paths:
+                print os.path.abspath(path)
+
+if __name__ == '__main__':
+    main(sys.argv)

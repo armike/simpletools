@@ -1,0 +1,21 @@
+#!/usr/local/bin/python
+import sys 
+def main():
+    if not sys.argv[1:]:
+        txt_to_lines(sys.stdin)
+    else:
+        for filepath in sys.argv[1:]:
+            with open(filepath, 'r') as f:
+                txt_to_lines(f)
+
+def txt_to_lines(instream):
+    first = True
+    for line in instream:
+        if not first:
+            sys.stdout.write("\n")
+        else:
+            first = False
+        sys.stdout.write("\n".join(line.split()))
+
+if __name__ == "__main__":
+    main()

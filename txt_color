@@ -1,0 +1,284 @@
+#!/usr/bin/python
+"""
+Echo input from stdin, hiliting any given regexes.  This might return weird
+output if your regular expressions include groups.
+
+This avoids calling studioenv for speed.
+"""
+__author__ = "Mike Ross"
+import sys, os, re, argparse
+
+darkColors = {
+ 'normal':     '\033[0m',
+ 'bold':       '\033[1m',
+ 'underline':  '\033[4m',
+ 'inverse':    '\033[7m',
+ 'fg_black':   '\033[30m',
+ 'fg_blue':    '\033[34m',
+ 'fg_cyan':    '\033[36m',
+ 'fg_green':   '\033[32m',
+ 'fg_magenta': '\033[35m',
+ 'fg_red':     '\033[31m',
+ 'fg_white':   '\033[37m',
+ 'fg_yellow':  '\033[33m',
+ 'bg_black':   '\033[40m',
+ 'bg_blue':    '\033[44m',
+ 'bg_cyan':    '\033[46m',
+ 'bg_green':   '\033[42m',
+ 'bg_magenta': '\033[45m',
+ 'bg_red':     '\033[41m',
+ 'bg_white':   '\033[47m',
+ 'bg_yellow':  '\033[43m',
+ }
+
+brightColors = darkColors.copy()
+brightColors.update({
+ 'fg_black':   '\033[90m',
+ 'fg_blue':    '\033[94m',
+ 'fg_cyan':    '\033[96m',
+ 'fg_green':   '\033[92m',
+ 'fg_magenta': '\033[95m',
+ 'fg_red':     '\033[91m',
+ 'fg_white':   '\033[97m',
+ 'fg_yellow':  '\033[93m',
+ 'bg_black':   '\033[100m',
+ 'bg_blue':    '\033[104m',
+ 'bg_cyan':    '\033[106m',
+ 'bg_green':   '\033[102m',
+ 'bg_magenta': '\033[105m',
+ 'bg_red':     '\033[101m',
+ 'bg_white':   '\033[107m',
+ 'bg_yellow':  '\033[103m',
+})
+
+for clr in 'black blue cyan green magenta red white yellow'.split():
+    darkColors[clr] = darkColors['fg_' + clr]
+    brightColors[clr] = brightColors['fg_' + clr]
+
+colorsInOrder = [
+    'normal',
+    'bold',
+    'inverse',
+    'underline',
+    'black',
+    'blue',
+    'cyan',
+    'green',
+    'magenta',
+    'red',
+    'white',
+    'yellow',
+    'fg_black',
+    'fg_blue',
+    'fg_cyan',
+    'fg_green',
+    'fg_magenta',
+    'fg_red',
+    'fg_white',
+    'fg_yellow',
+    'bg_black',
+    'bg_blue',
+    'bg_cyan',
+    'bg_green',
+    'bg_magenta',
+    'bg_red',
+    'bg_white',
+    'bg_yellow',
+    ]
+
+class App(object):
+    """
+Usage: txt_hilite regexes [-color string_color] [-bold]
+Which: Echoes input from stdin, hiliting any given regexes.  
+Where: 
+    -color <color>       Sets the hilite color.
+    -<color>             Shorthand to set the hilite color. (e.g. -red, -blue)
+    -bold                Make the hilited strings bold.
+    -key <int,...>       Takes a comma-separate list of ints.  For each key i,
+                         hilite the ith whitespace separated token in each
+                         line of text.
+    -dark                Use darker colors.
+    -print_colors        Display the list of available colors and exit.
+    -decolorize          Strip ansi color codes from all input.
+    -file <path>         Run on the given file instead of stdin.
+    -h                   Display this help and exit.
+    """
+
+    def run(self, args):
+        """
+        :Parameters:
+            args : `str list`
+                Commandline args to parse.
+        """
+        try:
+            self.opts = self.parseOptions(args)
+        except:
+            print self.__doc__.strip()
+            raise
+
+        if self.opts['help']:
+            print self.__doc__.strip()
+            return
+
+        if self.opts['print_colors']:
+            self.printColors()
+            return
+        
+        if self.opts['file']:
+            stream = open(self.opts['file'])
+        else:
+            stream = sys.stdin
+
+        if self.opts['decolorize']:
+            self.decolorizeStream(stream)
+        else:
+            color = self.pickColor()
+            self.hiliteStream(stream, color)
+
+        if stream != sys.stdin:
+            stream.close()
+
+    def pickColor(self):
+        """
+        :Returns:
+            The string ANSI code for the color specified by self.opts.
+        :Rtype:
+            `str`
+        """
+        if self.opts['dark']:
+            color = darkColors[self.opts['color']]
+        else:
+            color = brightColors[self.opts['color']]
+        if self.opts['bold']:
+            color += darkColors['bold']
+        return color
+
+    def printColors(self):
+        """Print all available colors and exit."""
+        normal = darkColors['normal']
+        maxLen = len(max(colorsInOrder, key=len)) + len(normal) + 1
+        print "BRIGHT".ljust(maxLen-len(normal)) + "DARK"
+        for color in colorsInOrder:
+            colorLabel = (color + normal).ljust(maxLen)
+            colorString = (
+                ("%s%s%s%s" % (brightColors[color], colorLabel,
+                               darkColors[color], colorLabel))
+                )
+            print colorString
+
+    def decolorizeStream(self, stream):
+        """
+        Prints the given stream contents without color.
+        :Parameters:
+            stream : `file`
+                An open file-like object.
+        """
+        for line in stream:
+            line = re.sub("\x1b\\[\\d+m", "", line)
+            sys.stdout.write(line)
+            sys.stdout.flush()
+
+    def hiliteStream(self, stream, color):
+        """
+        :Parameters:
+            stream : `file`
+                An open file-like object.
+            color : `str`
+                Ansi color code to hilite stream with.
+        """
+        normal = darkColors["normal"]
+        if self.opts["keys"]:
+            keys = sorted(self.opts["keys"])
+            maxKey = keys[-1]
+            for line in stream:
+                split = re.split(r"(\s)", line)
+                nonWhitespaceTokenIndex = 0
+                keyIndex = 0
+                nextKey = keys[keyIndex]
+                for tokenIndex,token in enumerate(split):
+                    if token.strip():
+                        if nonWhitespaceTokenIndex == nextKey:
+                            split[tokenIndex] = "%s%s%s" % (
+                                color, token, normal)
+                            keyIndex += 1
+                            if keyIndex == len(keys):
+                                break
+                            nextKey = keys[keyIndex]
+                        nonWhitespaceTokenIndex += 1
+                sys.stdout.write("".join(split))
+                sys.stdout.flush()
+                            
+        for line in stream:
+            for regex in self.opts["regexes"]:
+                line = re.sub(regex, r"%s\1%s" % (color, normal), line)
+            sys.stdout.write(line)
+            sys.stdout.flush()
+
+    def parseOptions(self, args):
+        """
+        :Parameters:
+            args : `str list`
+                String list of command objects.
+        :Returns:
+            Dict of options.
+        :Rtype:
+            `dict`
+        """
+        opts = {'regexes': [],
+                'color': 'green',
+                'dark': False,
+                'bold': False,
+                'print_colors': False,
+                'help': False,
+                'decolorize': False,
+                'file': None,
+                'keys': None,
+                }
+
+        while args:
+            arg = args.pop(0)
+            try:
+                if arg in ['-help', '-h']:
+                    opts['help'] = True
+                elif arg == '--color':
+                    if not args:
+                        raise ValueError("You need to supply a color to -color")
+                    colorName = args.pop(0)
+                    if colorName in darkColors:
+                        opts['color'] = colorName
+                    else:
+                        print ("WARNING: unrecognized color: %s" % (colorName))
+                elif arg == '--bold':
+                    opts['bold'] = True
+                elif arg == '--dark':
+                    opts['dark'] = True
+                elif arg == '--print_colors':
+                    opts['print_colors'] = True
+                elif arg == '--decolorize':
+                    opts['decolorize'] = True
+                elif arg in ['--keys', '-k', '-key']:
+                    keys = args.pop(0)
+                    opts['keys'] = [int(k) for k in keys.split(',')]
+                elif arg == "--file":
+                    if not args:
+                        raise ValueError("You need to supply a path to --file")
+                    fp = args.pop(0)
+                    if not os.path.exists(fp):
+                        raise OSError("File does not exist: %s" % fp)
+                    opts['file'] = fp
+                else:
+                    # Allow flags like -red, -blue.
+                    if arg.startswith("--") and arg[2:] in darkColors:
+                        opts['color'] = arg[2:]
+                    else:
+                        opts['regexes'].append("(%s)" % (arg))
+            except:
+                print ("%sError occurred while parsing this argument: %s%s." % (
+                        darkColors['red'], arg, darkColors['normal']))
+                print self.__doc__
+                raise
+
+        return opts
+
+if __name__ == "__main__":
+    App().run(sys.argv[1:])

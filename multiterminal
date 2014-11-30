@@ -1,0 +1,23 @@
+#!/bin/tcsh
+
+#dirs of the models you want to use
+set DIRS = ""
+foreach i ("maross_test" "maross_test2")
+    pwd
+    cd $i/prep
+    # gnome-terminal opens a new terminal window and executes the command
+    # following the -c option
+    gnome-terminal --execute tcsh -c '\
+        pwd\
+        set JOB = `pwd | awk -F/ '"'"'{print $3}'"'"'`\
+        set SHDW = `pwd | awk -F/ '"'"'{print $4}'"'"' | awk -F_ '"'"'{print $2}'"'"'`\
+        je $JOB-$SHDW -skip_cd_on_enter\
+        which prc_checkout\
+        make\
+        make add\
+        echo Hit enter to close this terminal\
+        set TERMINATE = $<\
+'
+   cd ../..
+end
+

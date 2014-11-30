@@ -1,0 +1,27 @@
+#!/usr/local/bin/python
+import sys
+
+def main():
+    if sys.argv[1:]:
+        print (winPath("".join(sys.argv[1:])))
+    else:
+        for line in sys.stdin:
+            print (winPath(line.rstrip()))
+        
+def winPath(path, rootDrive="Z:"):
+    """
+    :Parameters:
+        path : `str`
+            A path with some slashes
+    :Returns:
+        The same path on windows
+    :Rtype:
+        `str`
+    """
+    path = path.replace("/", '\\')
+    if path.startswith('\\'):
+        path = "%s%s" % (rootDrive, path)
+    return path
+    
+if __name__ == "__main__":
+    main()

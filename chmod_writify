@@ -1,0 +1,5 @@
+#!/bin/tcsh -fb
+set target = $1
+find $target -type f -exec chmod u+w {} \;
+find $target -type d -exec chmod u+w {} \;
+

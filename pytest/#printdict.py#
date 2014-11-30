@@ -1,0 +1,10 @@
+#!/usr/local/bin/python
+import sys
+
+def write(msg, newline=True):
+    """
+    :Parameters:
+        msg : `str`
+    """
+    sys.stdout.write(msg + "\n")
+

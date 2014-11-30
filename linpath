@@ -1,0 +1,27 @@
+#!/usr/local/bin/python
+import sys, re
+
+def main():
+    if sys.argv[1:]:
+        print (linPath("".join(sys.argv[1:])))
+    else:
+        for line in sys.stdin:
+            print (linPath(line.rstrip()))
+        
+def linPath(path, rootDrive="Z:"):
+    """
+    :Parameters:
+        path : `str`
+            A path with some slashes
+    :Returns:
+        The same path on windows
+    :Rtype:
+        `str`
+    """
+    if re.match(r'\w:', path):
+        path = path[2:]
+    path = path.replace('\\', '/')
+    return path
+    
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,5 @@
+#!/rel/map/guardians-2011.14.64/bin/python  -uWdefault
+# EASY-INSTALL-SCRIPT: 'logilab-common==0.57.1','pytest'
+__requires__ = 'logilab-common==0.57.1'
+import pkg_resources
+pkg_resources.run_script('logilab-common==0.57.1', 'pytest')

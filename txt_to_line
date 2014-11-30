@@ -1,0 +1,22 @@
+#!/usr/local/bin/python
+import sys 
+def main():
+    if not sys.argv[1:]:
+        txt_to_spaces(sys.stdin)
+    else:
+        for filepath in sys.argv[1:]:
+            with open(filepath, 'r') as f:
+                txt_to_spaces(f)
+
+def txt_to_spaces(instream):
+    first = True
+    for line in instream:
+        if not first:
+            sys.stdout.write(" ")
+        else:
+            first = False
+        sys.stdout.write(" ".join(line.split()))
+
+if __name__ == "__main__":
+    main()
+

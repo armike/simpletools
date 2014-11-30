@@ -1,0 +1,125 @@
+#!/usr/local/bin/python
+"""Modifies the clipboard contents with a given commandline tool.  The
+given tool should take text via stdin and output results to stdout.
+"""
+import sys, os, subprocess, tempfile, argparse
+
+
+def main(args):
+    opts = parse_opts(args)
+    text = get_clipboard_contents()
+    set_clipboard_contents(process_text(text, opts.edit_cmd))
+
+
+def parse_opts(args):
+    parser = argparse.ArgumentParser(
+        description="Modifies the clipboard contents with a given commandline "
+        "tool.  The given tool should take text via stdin and output results "
+        "to stdout.")
+    parser.add_argument('edit_cmd',
+                        help='A command that takes text via stdin and '
+                        'outputs results to stdout')
+    return parser.parse_args(args=args)
+
+
+def process_text(text, cmd):
+    tmp_fd, tmp_path = tempfile.mkstemp(prefix="txt_clipboard_cmd_tmp")
+    os.close(tmp_fd)
+    with open(tmp_path, 'w') as f:
+        f.write(text)
+    cmd = "{} {}".format(cmd, tmp_path)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    stdout,stderr = proc.communicate()
+    os.remove(tmp_path)
+    return stdout
+
+
+def get_clipboard_contents():
+    return get_clipboard().get_contents()
+
+
+def set_clipboard_contents(contents):
+    get_clipboard().set_contents(contents)
+
+
+def get_clipboard():
+    """
+    :Returns:
+        A Clipboard object that can be used to set the system clipboard.
+    :Rtype:
+        `Clipboard`
+    """
+    # From python docs at https://docs.python.org/2/library/sys.html
+    # System               platform value
+    # Linux (2.x and 3.x) 'linux2'
+    # Windows             'win32'
+    # Windows/Cygwin      'cygwin'
+    # Mac OS X            'darwin'
+    # OS/2                'os2'
+    # OS/2 EMX            'os2emx'
+    # RiscOS              'riscos'
+    # AtheOS              'atheos'
+    #
+    # For most Unix systems, this is the lowercased OS name as returned by
+    # uname -s with the first part of the version as returned by uname -r
+    # appended, e.g. 'sunos5', at the time when Python was built. Unless you
+    # want to test for a specific system version, it is therefore recommended
+    # to use the following idiom:
+    #
+    # if sys.platform.startswith('freebsd'):
+    #     # FreeBSD-specific code here...
+    # elif sys.platform.startswith('linux'):
+    #     # Linux-specific code here...
+
+    if sys.platform.startswith('darwin'):
+        return OSXClipboard()
+    elif sys.platform.startswith('linux'):
+        return XClipboard()
+
+
+class Clipboard(object):
+    """
+    A utility class for accessing the systemwide clipboard contents.
+    """
+    def get_contents(self):
+        raise NotImplementedError(
+            "You must use an implementation of Clipboard, not the base "
+            "class itself")
+
+    def set_contents(self):
+        raise NotImplementedError(
+            "You must use an implementation of Clipboard, not the base "
+            "class itself")    
+
+    def _run_cmd(self, cmd, input_text=None):
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stdin=subprocess.PIPE, shell=True)
+        if input_text is not None:
+            proc.stdin.write(input_text)
+        stdout,stderr = proc.communicate()
+        return stdout,stderr
+        
+
+class OSXClipboard(Clipboard):
+    """Clipboard for OSX systems with pbpaste and pbcopy"""
+    def get_contents(self):
+        return self._run_cmd('pbpaste')[0]
+
+    def set_contents(self, contents):
+        return self._run_cmd('pbcopy', input_text=contents)
+
+
+class XClipboard(Clipboard):
+    """Clipboard for linux systems with xclip"""
+
+    def get_contents(self):
+        return self._run_cmd('clip -selection primary -o')[0]
+
+    def set_contents(self, contents):
+        for selection in ['primary', 'clipboard']:
+            cmd = 'clip -selection {}'.format(selection)
+            self._run_cmd(cmd, input_text=contents)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

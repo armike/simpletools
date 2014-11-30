@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import sys,os
-"""This can also be achieved with <cmd> | sort | uniq -c"""
 
 def main(argv):
     args = argv[1:]

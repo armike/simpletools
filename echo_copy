@@ -1,0 +1,4 @@
+#!/bin/tcsh -fb
+echo -n $* | xclip -selection primary
+echo -n $* | xclip -selection clipboard
+echo $*

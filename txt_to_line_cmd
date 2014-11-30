@@ -1,0 +1,2 @@
+#!/bin/bash
+txt_clipboard_cmd txt_to_line

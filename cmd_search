@@ -1,0 +1,9 @@
+#!/bin/tcsh -fb
+
+# search $PATH for any commands matching the given grep args.
+#
+
+# I was worried that this would inherit a different environment, but
+# this seems to inherit the parent environment correctly.
+#
+echo $PATH | tr : "\n" | xargs -P 10 -n 1 -I PATH_ find PATH_ -maxdepth 1 -mindepth 1 -type f -o -type l |& grep -v "no such file or directory" | sort | grep -v "No such file or directory" | grep --color=always $* 
