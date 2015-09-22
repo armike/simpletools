@@ -11,7 +11,8 @@ class Matcher(object):
     def match_drivers_and_pa(self, passengers, drivers):
         match_quality = Match.MATCH_QUALITY_HIGH
         match_speed =  Match.MATCH_SPEED_FAST
-        self.match_drivers_with_params
+        for passenger in passengers:
+            ...
 
     def find_matches(self):
         ...
