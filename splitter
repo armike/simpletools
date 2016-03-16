@@ -1,0 +1,74 @@
+#!/usr/bin/python -u
+import sys, os, argparse
+
+class App(object):
+
+    def run(self):
+        self.opts = self.parse_opts()
+        self.main()
+
+    def parse_opts(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('file', nargs='?', help='The input file to process.  Reads stdin if not given.')
+        parser.add_argument('--prefix', help='Alternate prefix for the output files.')
+        parser.add_argument('--sizes', help='Explicit line counts for each file',
+                            type=int, nargs='*', default=[1,10,100,1000,10000,100000])
+        parser.add_argument('--step', help='If given, output file i will have step^i lines', type=int)
+        parser.add_argument('--header',
+                            help='Include the top line of the input file in each output file. '
+                            'This does not count towards the file\'s line count',
+                            action='store_true', default=False)
+        return parser.parse_args()
+
+    def get_split_sizes(self):
+        if self.opts.step:
+            for i in xrange(100):
+                yield self.opts.step**i
+        if self.opts.sizes:
+            for s in self.opts.sizes:
+                yield s
+    
+    def main(self):
+
+        prefix = None
+        if self.opts.file:
+            f = open(self.opts.file)
+            prefix, ext = os.path.splitext(self.opts.file)
+        else:
+            f = sys.stdin
+            prefix = 'stdin_split'
+            ext = '.csv'
+        if self.opts.prefix:
+            prefix = self.opts.prefix
+        print_header = self.opts.header
+
+        if print_header:
+            col_name_line = f.readline()
+
+        for split_size in self.get_split_sizes():
+            outpath = "{}.{}{}".format(prefix, split_size, ext)
+            num_lines = 0
+            with open(outpath, 'w') as outf:
+                for i in range(split_size):
+                    try:
+                        line = f.readline()
+                    except IOError:
+                        line = None
+                    if line:
+                        if num_lines == 0:
+                            first_line = line.strip()
+                            if print_header:
+                                outf.write(col_name_line)
+                        outf.write(line)
+                        num_lines += 1
+                    else:
+                        break
+                if num_lines > 0:
+                    print 'Read {} lines for {}. First line:  {}'.format(num_lines, outpath, first_line)
+                else:
+                    break
+
+if __name__ == '__main__':
+    app = App()
+    app.run()
+

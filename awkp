@@ -1,36 +1,97 @@
-#!/usr/local/bin/python
+#!/usr/bin/python -u
+"""
+mimics awk -print '{print $<args>}',  but with pythonic indices
+behavior when using delimiters.
+"""
+
 import sys,os
-# mimics awk -print '{}', hence some weird indexing and inconsistent
-# behavior when using delimiters.
 
 def main():
     args = sys.argv[1:]
     i = 0
     delim = None
-    # Strip out -F args.
+    output_delim = ' '
+    # Parse args to strip out -F <delimiter>
+    # 
     while i < len(args):
         arg = args[i]
-        if arg.startswith('-F') and len(arg) > 2:
-            delim = arg[2:]
-            args.pop(i)
+
+        # Handle -F/ or -F /
+        # 
+        if arg.startswith('-F'):
+            if arg == '-F':
+                args.pop(i)
+                delim = args.pop(i)
+            else:
+                delim = arg[2:]
+                args.pop(i)
+        if arg.startswith('-s'):
+            if arg == '-s':
+                args.pop(i)
+                output_delim = args.pop(i)
+            else:
+                output_delim = arg[2:]
+                args.pop(i)
         else:
             i += 1
 
+    # Print stdin in the specified way.
+    # 
     for line in sys.stdin:
         words = line.strip().split(delim)
         output = []
         for arg in args:
             try:
-                index = int(arg)
-                if index == 0:
-                    output.append(line.strip('\n'))
+                if "awkp_line" in arg:
+                    output.append(line)
+                elif ':' in arg:
+                    output.append(" ".join(sliceByArg(words, arg)[1]))
                 else:
-                    output.append(words[index-1])
-            except (ValueError, IndexError):
+                    index = int(arg)
+                    if index < 0:
+                        output.append(words[index])
+                    else:
+                        output.append(words[index])
+            # If an invalid index was given, append nothing.
+            # 
+            except IndexError:
+                pass
+            # If the arg couldn't be converted to an int, append the arg.
+            # 
+            except ValueError:
                 output.append(arg)
-        print " ".join(output)
+        try:
+            print output_delim.join(output)
+        except IOError:
+            break
 
-# test
+
+def sliceByArg(iterable, sliceArgString):
+    """
+    :Parameters:
+        iterable : `iterable` 
+            An iterable sequence of elements.
+        sliceArgString : `str`
+            A string version of a slice, e.g.
+            "1", "1:", "4:6", ":-3"
+    :Returns:
+        Three lists:
+            elements of iterables appearing before the slice.
+            elements of iterables appearing within the slice.
+            elements of iterables appearing beyond the slice.
+    :Rtype:
+        `tuple`
+    """
+    sliceArgs = [0, len(iterable), 1]
+    for i,arg in enumerate(sliceArgString.split(":")):
+        try:
+            sliceArgs[i] = int(arg)
+        except ValueError:
+            pass
+    innerElements = iterable[slice(*sliceArgs)]
+    preElements   = iterable[:sliceArgs[0]]
+    postElements  = iterable[sliceArgs[1]:]
+    return preElements, innerElements, postElements
 
 if __name__ == "__main__":
     main()
