@@ -48,21 +48,21 @@ class App(object):
         for split_size in self.get_split_sizes():
             outpath = "{}.{}{}".format(prefix, split_size, ext)
             num_lines = 0
+            first_line = None
             with open(outpath, 'w') as outf:
                 for i in range(split_size):
                     try:
                         line = f.readline()
                     except IOError:
                         line = None
-                    if line:
-                        if num_lines == 0:
-                            first_line = line.strip()
-                            if print_header:
-                                outf.write(col_name_line)
-                        outf.write(line)
-                        num_lines += 1
-                    else:
+                    if not line:
                         break
+                    if num_lines == 0:
+                        first_line = line.strip()
+                        if print_header:
+                            outf.write(col_name_line)
+                    outf.write(line)
+                    num_lines += 1
                 if num_lines > 0:
                     print 'Read {} lines for {}. First line:  {}'.format(num_lines, outpath, first_line)
                 else:
