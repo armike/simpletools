@@ -1,0 +1,152 @@
+#!/usr/bin/python
+"""
+Diff the output of two commands
+"""
+__author__ = "Mike Ross"
+
+import sys, os, tempfile, argparse, subprocess, shlex, logging
+
+class App(object):
+    """
+    Compares the output of 2 separate commands.
+    
+    :Examples:
+
+        cmd_diff one.txt two.txt -cmd 'sort {} | uniq'
+
+            Diffs the sorted contents of one.txt and two.txt with duplicate
+            lines removed.
+
+        cmd_diff 'cat file.txt' 'sort file.txt'
+    
+            Diffs the raw contents file.txt against its contents when sorted.
+    """
+
+    def __init__(self):
+        super(App, self).__init__()
+        self.log = logging.getLogger(__name__)
+        self.log.addHandler(logging.StreamHandler())
+
+    def run(self, args):
+        self.opts = self.parseOpts(args)
+        self.opts = self.configureOptions(self.opts)
+        self.main()
+
+    def parseOpts(self, args):
+        """Parse options passed during run."""
+        parser = argparse.ArgumentParser(description=self.__doc__)
+        parser.add_argument('arg1',
+                            help='First command to run OR argument to give cmd.',
+                            )
+        parser.add_argument('arg2',
+                            help='Second command to run OR argument to give cmd.',
+                            )
+        parser.add_argument(
+            '--cmd',
+            help='If given, this command will be run once with <cmd1> as the '
+            'arguments and cmd2 as the arguments. {} will be replaced '
+            'with the file name, otherwise the filename will be appended '
+            'to the end of the command '
+            'Example: '
+            'cmd_diff one.mat two.mat -cmd "mat_print -contents"',
+            nargs=1,
+        )
+        parser.add_argument('--gui',
+                            help='Use a default gui to diff the output commands',
+                            action='store_true')
+        parser.add_argument('--diff_cmd',
+                            help='Command to use to diff the files.',
+                            default='diff',
+                            nargs=1,
+                            )
+        parser.add_argument('--info',
+                            action='store_true')
+        return parser.parse_args(args=args)
+
+    def configureOptions(self, optsNamespace):
+        """
+        Configures the application options.
+        :param optsNamespace: A Namespace that stores parsed cmdline options as fields.
+        :type optsNamespace: argparse.Namespace
+        :returns: A dict with options as entries.
+        :rtype: dict
+        """
+
+        # Turn namespace into an options dict.
+        opts = dict([(attr, getattr(optsNamespace, attr)) for attr in dir(optsNamespace)
+                     if not attr.startswith("_")])
+        if opts['info']:
+            self.log.setLevel(logging.INFO)
+
+        if opts['gui']:
+            opts['diff_cmd'] = 'meld'
+        return opts
+
+    def main(self):
+        """Application entry point."""
+
+        opts = self.opts
+        cmd = opts['cmd']
+        if cmd:
+            if '{}' not in cmd:
+                cmd = "%s {}" % cmd
+            cmd1 = cmd.replace("{}", opts['arg1'])
+            cmd2 = cmd.replace("{}", opts['arg2'])
+        else:
+            cmd1 = opts['arg1']
+            cmd2 = opts['arg2']
+        tmp1fd,tmp1Path = self.getOutputFileInfo(cmd1)
+        tmp2fd,tmp2Path = self.getOutputFileInfo(cmd2)
+        diffOutput = self.runCmd("%s %s %s" % (opts['diff_cmd'], tmp1Path, tmp2Path),
+                                 showOutput=False)
+
+        if not diffOutput:
+            print ("Output is identical")
+        else:
+            diffCmd = self.opts['diff_cmd']
+            self.runCmd("%s '%s' '%s'" % (diffCmd, tmp1Path, tmp2Path),
+                        showOutput=True)
+        os.close(tmp1fd)
+        os.close(tmp2fd)
+
+    def getOutputFileInfo(self, cmd):
+        # use semi-readable names so contents are more obvious
+        # for GUIs
+        output = self.runCmd(cmd, showOutput=False, shell=True)
+        prefix = "diff_cmd__%s" % cmd.replace(" ", "__")
+        prefix = prefix.replace("/", "^")
+        prefix = prefix.replace("|", "^")
+        prefix = prefix.replace("'", "^")
+        prefix = prefix.replace('"', "^")
+        prefix = prefix.replace(";", "^")
+
+        tmpfd,tmpPath = tempfile.mkstemp(prefix=prefix)
+        os.write(tmpfd, output)
+        return tmpfd,tmpPath
+
+    def runCmd(self, cmd, showOutput=False, shell=False):
+        """
+        :param cmd: string command to run
+        :param showOutput: If True, echo the output to stdout
+        :param shell: execute cmd in a subshell
+        :return: stdout of the given command
+        """
+        if shell:
+            tmpfd, tmpPath = tempfile.mkstemp(prefix='cmd_diff_tmp')
+            os.write(tmpfd, cmd + os.linesep)
+            cmd = "/bin/bash -c 'source {}'".format(tmpPath)
+        self.log.info("Running: {}".format(cmd))
+        cmdArgs = shlex.split(cmd)
+
+        proc = subprocess.Popen(cmdArgs, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        stdout,stderr = proc.communicate()
+        if showOutput:
+            print stdout
+        if shell:
+            os.close(tmpfd)
+        return stdout
+
+
+if __name__ == '__main__':
+    App().run(sys.argv[1:])

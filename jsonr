@@ -1,0 +1,117 @@
+#!/usr/bin/python
+"""
+Print the pretty json format of a file or stdin.  Processes files composed of:
+  A. One serialized object in total
+  B. One serialized object per line (e.g. mongoexport --json)
+
+Serialized objects can be:
+  A. vanilla json like {"something": 12}
+  B. python literals like {u'something': 0x0c}
+"""
+import sys, os, json, re, ast, pprint
+
+OUTPUT_JSON = 'json'
+OUTPUT_PYTHON = 'python'
+OUTPUT_PHP = 'php'
+INDENT = 4
+
+import argparse
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('file', nargs='?', help='file to read, otherwise read stdin')
+    parser.add_argument(
+        '--py',
+        help='print in python style instead of json',
+        action='store_true',
+    )
+    parser.add_argument(
+        '--php',
+        help='print in python style instead of json',
+        action='store_true',
+    )
+
+    args = parser.parse_args()
+
+    # TODO: there's a better way to do this with argparse
+    if args.py:
+        output_type = OUTPUT_PYTHON
+    elif args.php:
+        output_type = OUTPUT_PHP
+    else:
+        output_type = OUTPUT_JSON
+    if args.file:
+        with open(sys.argv[1], 'r') as f:
+            reformat_json_lines(f, output_type)
+    else:
+        reformat_json_lines(sys.stdin, output_type)
+
+def reformat_json_lines(instream, output_type):
+    lines = []
+    try:
+        # Interpret as one json object per line (e.g. a mongo export)
+        for line in instream:
+            # Remove ansi codes
+            line = re.sub("\x1b\\[\\d+m", "", line)
+            lines.append(line)
+            obj = get_obj(line)
+            sys.stdout.write(get_formatted(obj, output_type))
+            sys.stdout.write('\n')
+    
+    except:
+        # Interpret the entire stream as a single json object
+        lines = lines + [L for L in instream]
+        text = "".join(lines)
+        # Remove ansi codes
+        text = re.sub("\x1b\\[\\d+m", "", text)
+        obj = get_obj(text)
+        print get_formatted(obj, output_type)
+
+def get_obj(text):
+    try:
+        return json.loads(text)
+    except:
+        pass
+    try:
+        return ast.literal_eval(text)
+    except SyntaxError:
+        pass
+    raise ValueError('Unable to decode text as json or python: '.format(text))
+        
+def get_formatted(obj, output_type):
+    if output_type == OUTPUT_JSON:
+        return json.dumps(obj, sys.stdout,sort_keys=True, indent=INDENT,
+                          separators=(',', ': '))
+    elif output_type == OUTPUT_PYTHON:
+        return pprint.pformat(obj, indent=INDENT)
+    elif output_type == OUTPUT_PHP:
+        return obj2php(obj)
+    raise ValueError('Unrecognized output_type={}'.format(output_type))
+
+def obj2php(d, indent=INDENT, indent_incr=INDENT):
+    indent_text = " " * indent
+    prefix = "\n" + indent_text
+    joiner = ",\n" + indent_text
+    suffix = ",\n" + (" " * (indent - indent_incr))
+    indent += indent_incr
+    
+    if d is None:
+        return "null"
+    elif isinstance(d, list):
+        contents = [obj2php(elt, indent=indent) for elt in d]
+        formatted = prefix + joiner.join(contents) + suffix if contents else ''
+        return "array({})".format(formatted)
+    elif isinstance(d, dict):
+        pairs = [(obj2php(k), obj2php(v, indent=indent)) for k, v in d.items()]
+        contents = ["{} => {}".format(k, v) for k, v in pairs]
+        formatted = prefix + joiner.join(contents) + suffix if contents else ''
+        return 'array({})'.format(formatted)
+    if isinstance(d, basestring):
+        return "'{}'".format(d)
+    if isinstance(d, bool):
+        return str(d).lower()
+    return d
+
+        
+if __name__ == '__main__':
+    main()

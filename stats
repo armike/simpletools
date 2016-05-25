@@ -1,0 +1,54 @@
+#!/usr/bin/python
+import sys,os
+
+def main(args):
+    args = args[1:]
+    if args:
+        printStats(args)
+    else:
+        values = [] 
+        for line in sys.stdin:
+            values += line.split()
+        printStats(values)
+
+def printStats(values):
+    stats = Stats([float(f) for f in values])
+    print stats.toString()
+    
+
+class Stats():
+    def __init__(self, values):
+        """
+        :Parameters:
+            values : `float list`
+        """
+        self.values = values
+        self.calculate()
+
+    def calculate(self):
+        sortedValues = sorted(self.values)
+        numValues = len(self.values)
+        
+        self.count   = numValues
+        self.minTime = sortedValues[0]
+        self.avgTime = sum(sortedValues) / numValues
+        self.q1Time  = sortedValues[numValues//3] 
+        self.medTime = sortedValues[numValues//2]
+        self.q3Time  = sortedValues[numValues*3//4]
+        self.p95     = sortedValues[numValues*95//100]
+        self.maxTime = sortedValues[-1]
+        self.sum     = sum(sortedValues)
+
+    def toString(self):
+        return """count:  %(count)d
+mean:   %(avgTime)f
+median: %(medTime)f
+min:    %(minTime)f
+max:    %(maxTime)f
+sum:    %(sum)f
+P95:    %(p95)f
+Q1:     %(q1Time)f
+Q3:     %(q3Time)f""" % (self.__dict__)
+
+if __name__ == '__main__':
+   main(sys.argv)
