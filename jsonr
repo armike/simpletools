@@ -27,7 +27,7 @@ def main():
     )
     parser.add_argument(
         '--php',
-        help='print in python style instead of json',
+        help='print in php style instead of json',
         action='store_true',
     )
 
